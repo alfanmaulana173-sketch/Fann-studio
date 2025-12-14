@@ -6,6 +6,42 @@ const cleanBase64 = (base64: string) => {
   return base64.replace(/^data:(.*,)?/, '');
 };
 
+// Helper for delay
+const wait = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+
+/**
+ * Retries an async operation with exponential backoff if a rate limit error occurs.
+ */
+async function retryWithBackoff<T>(
+  operation: () => Promise<T>,
+  retries: number = 3,
+  delay: number = 2000
+): Promise<T> {
+  try {
+    return await operation();
+  } catch (error: any) {
+    const isRateLimit = 
+      error?.status === 429 || 
+      error?.code === 429 || 
+      error?.status === 'RESOURCE_EXHAUSTED' ||
+      error?.message?.includes('429') ||
+      error?.message?.includes('Quota exceeded') ||
+      error?.message?.includes('RESOURCE_EXHAUSTED');
+
+    if (isRateLimit && retries > 0) {
+      console.warn(`Quota limit hit. Retrying in ${delay}ms...`);
+      await wait(delay);
+      return retryWithBackoff(operation, retries - 1, delay * 2);
+    }
+
+    if (isRateLimit) {
+      throw new Error("Daily quota exceeded or server busy. Please wait a minute and try again.");
+    }
+    
+    throw error;
+  }
+}
+
 const POSE_PROMPTS: Record<string, string> = {
   [PoseType.STANDING_FRONT]: "standing straight facing the camera",
   [PoseType.CONTRAPPOSTO]: "standing with weight on one leg, body forming a natural curve (contrapposto)",
@@ -117,31 +153,33 @@ export const swapOutfit = async (
   // Assign full prompt to the first text part
   parts[0].text = prompt;
 
-  try {
-    const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash-image',
-      contents: {
-        parts: parts
-      },
-      config: {
-        imageConfig: {
-          aspectRatio: IMAGE_RATIO_MAP[ratio]
+  return retryWithBackoff(async () => {
+    try {
+      const response = await ai.models.generateContent({
+        model: 'gemini-2.5-flash-image',
+        contents: {
+          parts: parts
+        },
+        config: {
+          imageConfig: {
+            aspectRatio: IMAGE_RATIO_MAP[ratio]
+          }
         }
-      }
-    });
+      });
 
-    if (response.candidates?.[0]?.content?.parts) {
-      for (const part of response.candidates[0].content.parts) {
-        if (part.inlineData && part.inlineData.data) {
-          return `data:image/png;base64,${part.inlineData.data}`;
+      if (response.candidates?.[0]?.content?.parts) {
+        for (const part of response.candidates[0].content.parts) {
+          if (part.inlineData && part.inlineData.data) {
+            return `data:image/png;base64,${part.inlineData.data}`;
+          }
         }
       }
+      throw new Error("No image data returned from the model.");
+    } catch (error) {
+      console.error("Outfit swap failed:", error);
+      throw error;
     }
-    throw new Error("No image data returned from the model.");
-  } catch (error) {
-    console.error("Outfit swap failed:", error);
-    throw error;
-  }
+  });
 };
 
 /**
@@ -192,29 +230,31 @@ export const generateProductPoster = async (
 
   parts[0].text = fullPrompt;
 
-  try {
-    const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash-image',
-      contents: { parts: parts },
-      config: {
-        imageConfig: {
-          aspectRatio: IMAGE_RATIO_MAP[ratio]
+  return retryWithBackoff(async () => {
+    try {
+      const response = await ai.models.generateContent({
+        model: 'gemini-2.5-flash-image',
+        contents: { parts: parts },
+        config: {
+          imageConfig: {
+            aspectRatio: IMAGE_RATIO_MAP[ratio]
+          }
         }
-      }
-    });
+      });
 
-    if (response.candidates?.[0]?.content?.parts) {
-      for (const part of response.candidates[0].content.parts) {
-        if (part.inlineData && part.inlineData.data) {
-          return `data:image/png;base64,${part.inlineData.data}`;
+      if (response.candidates?.[0]?.content?.parts) {
+        for (const part of response.candidates[0].content.parts) {
+          if (part.inlineData && part.inlineData.data) {
+            return `data:image/png;base64,${part.inlineData.data}`;
+          }
         }
       }
+      throw new Error("No image generated.");
+    } catch (error) {
+      console.error("Poster generation failed:", error);
+      throw error;
     }
-    throw new Error("No image generated.");
-  } catch (error) {
-    console.error("Poster generation failed:", error);
-    throw error;
-  }
+  });
 };
 
 /**
@@ -237,36 +277,39 @@ export const generateVideo = async (
   const enhancedPrompt = `${prompt}. Visual Style: Cinematic, Photorealistic. Framing: Optimize composition for ${ratioInstruction}. Keep main subject centered.`;
 
   try {
-    let operation;
-
-    if (referenceImage) {
-      operation = await ai.models.generateVideos({
-        model: model,
-        prompt: enhancedPrompt,
-        image: {
-          imageBytes: cleanBase64(referenceImage.base64),
-          mimeType: referenceImage.mimeType,
-        },
-        config: {
-            numberOfVideos: 1,
-            resolution: '720p',
-            aspectRatio: targetRatio
-        }
-      });
-    } else {
-      operation = await ai.models.generateVideos({
-        model: model,
-        prompt: enhancedPrompt,
-        config: {
-            numberOfVideos: 1,
-            resolution: '720p',
-            aspectRatio: targetRatio
-        }
-      });
-    }
+    // Retry initial video generation request
+    let operation = await retryWithBackoff(async () => {
+      if (referenceImage) {
+        return await ai.models.generateVideos({
+          model: model,
+          prompt: enhancedPrompt,
+          image: {
+            imageBytes: cleanBase64(referenceImage.base64),
+            mimeType: referenceImage.mimeType,
+          },
+          config: {
+              numberOfVideos: 1,
+              resolution: '720p',
+              aspectRatio: targetRatio
+          }
+        });
+      } else {
+        return await ai.models.generateVideos({
+          model: model,
+          prompt: enhancedPrompt,
+          config: {
+              numberOfVideos: 1,
+              resolution: '720p',
+              aspectRatio: targetRatio
+          }
+        });
+      }
+    });
 
     while (!operation.done) {
       await new Promise(resolve => setTimeout(resolve, 5000));
+      // Polling usually doesn't hit strict quotas like creation, but good to be safe.
+      // We won't wrap this strictly with backoff to avoid complex state, but basic try/catch exists in caller.
       operation = await ai.operations.getVideosOperation({ operation: operation });
     }
 

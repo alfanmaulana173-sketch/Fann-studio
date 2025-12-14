@@ -49,8 +49,8 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({ label, image, onImageChan
 
   return (
     <div className="flex flex-col gap-2 w-full">
-      <span className="text-sm font-medium text-slate-300 ml-1">{label}</span>
-      <div className={`relative w-full ${heightClass} rounded-xl border-2 border-dashed border-slate-700 hover:border-indigo-500 transition-colors bg-slate-800/50 flex flex-col items-center justify-center cursor-pointer group overflow-hidden`}>
+      <span className="text-sm font-medium text-emerald-900 ml-1">{label}</span>
+      <div className={`relative w-full ${heightClass} rounded-xl border-2 border-dashed border-emerald-200 hover:border-emerald-500 transition-colors bg-white/50 flex flex-col items-center justify-center cursor-pointer group overflow-hidden`}>
         
         {image ? (
           <>
@@ -71,11 +71,11 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({ label, image, onImageChan
           </>
         ) : (
           <div className="flex flex-col items-center justify-center w-full h-full p-4 text-center relative">
-            <div className="p-4 bg-slate-800 rounded-full mb-3 group-hover:bg-slate-700 transition-colors pointer-events-none">
-              <Upload className="w-6 h-6 text-slate-400 group-hover:text-indigo-400" />
+            <div className="p-4 bg-emerald-50 rounded-full mb-3 group-hover:bg-emerald-100 transition-colors pointer-events-none">
+              <Upload className="w-6 h-6 text-emerald-400 group-hover:text-emerald-600" />
             </div>
-            <p className="text-sm text-slate-400 font-medium pointer-events-none">Click to upload</p>
-            <p className="text-xs text-slate-500 mt-1 pointer-events-none">PNG, JPG up to 5MB</p>
+            <p className="text-sm text-slate-500 font-medium pointer-events-none">Click to upload</p>
+            <p className="text-xs text-slate-400 mt-1 pointer-events-none">PNG, JPG up to 5MB</p>
             <input 
               type="file" 
               className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" 

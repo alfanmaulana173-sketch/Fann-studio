@@ -51,8 +51,8 @@ const ProductPoster: React.FC<ProductPosterProps> = ({ apiKey }) => {
   return (
     <div className="max-w-6xl mx-auto">
       <div className="text-center space-y-2 mb-10">
-        <h2 className="text-3xl font-bold text-white">Commercial Studio</h2>
-        <p className="text-slate-400 max-w-lg mx-auto">
+        <h2 className="text-3xl font-bold text-emerald-950">Commercial Studio</h2>
+        <p className="text-slate-500 max-w-lg mx-auto">
           Upload a simple product photo. We'll remove the background and place it in a professional marketing setting.
         </p>
       </div>
@@ -60,7 +60,7 @@ const ProductPoster: React.FC<ProductPosterProps> = ({ apiKey }) => {
       <div className="flex flex-col lg:flex-row gap-8">
         {/* Controls */}
         <div className="w-full lg:w-1/3 space-y-6">
-          <div className="bg-slate-800/30 p-6 rounded-2xl border border-slate-700/50 space-y-6">
+          <div className="bg-white p-6 rounded-2xl border border-emerald-100 shadow-sm space-y-6">
             <ImageUploader 
               label="Product Photo" 
               image={productImg} 
@@ -76,9 +76,9 @@ const ProductPoster: React.FC<ProductPosterProps> = ({ apiKey }) => {
             />
             
             <div className="space-y-2">
-              <label className="text-sm font-medium text-slate-300">Background Theme & Vibe</label>
+              <label className="text-sm font-medium text-emerald-900">Background Theme & Vibe</label>
               <textarea 
-                className="w-full bg-slate-900/50 border border-slate-700 rounded-xl p-4 text-slate-100 focus:ring-2 focus:ring-indigo-500 focus:outline-none resize-none h-32 placeholder:text-slate-600"
+                className="w-full bg-slate-50 border border-slate-200 rounded-xl p-4 text-slate-800 focus:ring-2 focus:ring-emerald-500 focus:outline-none resize-none h-32 placeholder:text-slate-400"
                 placeholder="e.g., A minimalist marble podium with soft morning sunlight and monstera leaves shadows..."
                 value={theme}
                 onChange={(e) => setTheme(e.target.value)}
@@ -86,18 +86,18 @@ const ProductPoster: React.FC<ProductPosterProps> = ({ apiKey }) => {
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm font-medium text-slate-300 ml-1 flex items-center gap-2">
-                <Monitor className="w-4 h-4 text-indigo-400" />
+              <label className="text-sm font-medium text-emerald-900 ml-1 flex items-center gap-2">
+                <Monitor className="w-4 h-4 text-emerald-600" />
                 Output Aspect Ratio
               </label>
               <div className="relative">
                 <select
                   value={selectedRatio}
                   onChange={(e) => setSelectedRatio(e.target.value as AspectRatio)}
-                  className="w-full appearance-none bg-slate-900/50 border border-slate-700 rounded-xl px-4 py-3 text-slate-100 focus:ring-2 focus:ring-indigo-500 focus:outline-none cursor-pointer hover:bg-slate-800/50 transition-colors"
+                  className="w-full appearance-none bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-slate-800 focus:ring-2 focus:ring-emerald-500 focus:outline-none cursor-pointer hover:bg-slate-100 transition-colors"
                 >
                   {RatioOptions.map((option) => (
-                    <option key={option.value} value={option.value} className="bg-slate-900">
+                    <option key={option.value} value={option.value} className="bg-white">
                       {option.label}
                     </option>
                   ))}
@@ -111,10 +111,10 @@ const ProductPoster: React.FC<ProductPosterProps> = ({ apiKey }) => {
             <button
               onClick={handleGenerate}
               disabled={!productImg || !theme || loading || !apiKey}
-              className={`w-full py-4 rounded-xl font-bold text-lg flex items-center justify-center gap-2 transition-all shadow-lg
+              className={`w-full py-4 rounded-xl font-bold text-lg flex items-center justify-center gap-2 transition-all shadow-md
                 ${!productImg || !theme || loading || !apiKey
-                  ? 'bg-slate-700 text-slate-400 cursor-not-allowed' 
-                  : 'bg-indigo-600 hover:bg-indigo-500 text-white hover:shadow-indigo-500/25'
+                  ? 'bg-slate-200 text-slate-400 cursor-not-allowed' 
+                  : 'bg-emerald-600 hover:bg-emerald-700 text-white hover:shadow-emerald-500/25'
                 }`}
             >
               {loading ? (
@@ -129,35 +129,35 @@ const ProductPoster: React.FC<ProductPosterProps> = ({ apiKey }) => {
                 </>
               )}
             </button>
-            {error && <p className="text-red-400 text-sm bg-red-900/10 p-2 rounded">{error}</p>}
+            {error && <p className="text-red-600 text-sm bg-red-50 p-2 rounded border border-red-200">{error}</p>}
           </div>
         </div>
 
         {/* Preview */}
         <div className="w-full lg:w-2/3">
-           <div className="h-full min-h-[600px] bg-slate-800/30 p-2 rounded-2xl border border-slate-700/50 flex flex-col relative">
-             <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-slate-700/20 via-slate-900/0 to-slate-900/0 pointer-events-none" />
+           <div className="h-full min-h-[600px] bg-white p-2 rounded-2xl border border-emerald-100 shadow-sm flex flex-col relative">
+             <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-emerald-50 via-white to-white pointer-events-none" />
              
              {resultImg ? (
-               <div className="relative w-full h-full flex items-center justify-center group bg-black/40 rounded-xl">
+               <div className="relative w-full h-full flex items-center justify-center group bg-slate-50 rounded-xl border border-slate-100">
                  <img 
                     src={resultImg} 
                     alt="Promo Poster" 
-                    className="max-w-full max-h-[80vh] object-contain shadow-2xl rounded-lg" 
+                    className="max-w-full max-h-[80vh] object-contain shadow-xl rounded-lg" 
                  />
                  <a 
                    href={resultImg} 
                    download="fann-promo.png"
-                   className="absolute bottom-8 right-8 px-6 py-3 bg-white text-slate-900 font-bold rounded-full shadow-xl opacity-0 group-hover:opacity-100 transition-all translate-y-4 group-hover:translate-y-0 flex items-center gap-2"
+                   className="absolute bottom-8 right-8 px-6 py-3 bg-white text-emerald-900 font-bold rounded-full shadow-xl opacity-0 group-hover:opacity-100 transition-all translate-y-4 group-hover:translate-y-0 flex items-center gap-2 border border-emerald-100"
                  >
-                   <Download className="w-4 h-4" />
+                   <Download className="w-4 h-4 text-emerald-600" />
                    Download Poster
                  </a>
                </div>
              ) : (
-                <div className="flex-grow flex flex-col items-center justify-center text-slate-600 border-2 border-dashed border-slate-800 rounded-xl m-4">
-                  <ShoppingBag className="w-16 h-16 mb-4 opacity-50" />
-                  <p className="text-lg font-medium">Your Masterpiece Awaits</p>
+                <div className="flex-grow flex flex-col items-center justify-center text-slate-400 border-2 border-dashed border-slate-200 rounded-xl m-4 bg-slate-50/50">
+                  <ShoppingBag className="w-16 h-16 mb-4 opacity-30 text-emerald-400" />
+                  <p className="text-lg font-medium text-slate-600">Your Masterpiece Awaits</p>
                   <p className="text-sm opacity-70">Generated posters appear here</p>
                 </div>
              )}

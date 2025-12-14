@@ -65,15 +65,15 @@ const OutfitSwapper: React.FC<OutfitSwapperProps> = ({ apiKey }) => {
   return (
     <div className="max-w-5xl mx-auto space-y-8">
       <div className="text-center space-y-2 mb-8">
-        <h2 className="text-3xl font-bold text-white">Virtual Wardrobe</h2>
-        <p className="text-slate-400 max-w-lg mx-auto">
+        <h2 className="text-3xl font-bold text-emerald-950">Virtual Wardrobe</h2>
+        <p className="text-slate-500 max-w-lg mx-auto">
           Upload a character and a reference outfit. Optionally add a product for the character to hold.
         </p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
         {/* Input Section */}
-        <div className="space-y-6 bg-slate-800/30 p-6 rounded-2xl border border-slate-700/50">
+        <div className="space-y-6 bg-white p-6 rounded-2xl border border-emerald-100 shadow-sm">
           <ImageUploader 
             label="1. Character Image" 
             image={characterImg} 
@@ -81,8 +81,8 @@ const OutfitSwapper: React.FC<OutfitSwapperProps> = ({ apiKey }) => {
           />
           
           <div className="flex items-center justify-center">
-             <div className="p-2 bg-slate-800 rounded-full border border-slate-700">
-               <ArrowRight className="w-4 h-4 text-slate-500 rotate-90 md:rotate-0" />
+             <div className="p-2 bg-emerald-50 rounded-full border border-emerald-100">
+               <ArrowRight className="w-4 h-4 text-emerald-600 rotate-90 md:rotate-0" />
              </div>
           </div>
 
@@ -103,18 +103,18 @@ const OutfitSwapper: React.FC<OutfitSwapperProps> = ({ apiKey }) => {
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <label className="text-sm font-medium text-slate-300 ml-1 flex items-center gap-2">
-                <User className="w-4 h-4 text-indigo-400" />
+              <label className="text-sm font-medium text-emerald-900 ml-1 flex items-center gap-2">
+                <User className="w-4 h-4 text-emerald-600" />
                 Target Pose
               </label>
               <div className="relative">
                 <select
                   value={selectedPose}
                   onChange={(e) => setSelectedPose(e.target.value as PoseType)}
-                  className="w-full appearance-none bg-slate-900/50 border border-slate-700 rounded-xl px-4 py-3 text-slate-100 focus:ring-2 focus:ring-indigo-500 focus:outline-none cursor-pointer hover:bg-slate-800/50 transition-colors"
+                  className="w-full appearance-none bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-slate-800 focus:ring-2 focus:ring-emerald-500 focus:outline-none cursor-pointer hover:bg-slate-100 transition-colors"
                 >
                   {PoseOptions.map((option) => (
-                    <option key={option.value} value={option.value} className="bg-slate-900">
+                    <option key={option.value} value={option.value} className="bg-white">
                       {option.label}
                     </option>
                   ))}
@@ -126,18 +126,18 @@ const OutfitSwapper: React.FC<OutfitSwapperProps> = ({ apiKey }) => {
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm font-medium text-slate-300 ml-1 flex items-center gap-2">
-                <Monitor className="w-4 h-4 text-indigo-400" />
+              <label className="text-sm font-medium text-emerald-900 ml-1 flex items-center gap-2">
+                <Monitor className="w-4 h-4 text-emerald-600" />
                 Aspect Ratio
               </label>
               <div className="relative">
                 <select
                   value={selectedRatio}
                   onChange={(e) => setSelectedRatio(e.target.value as AspectRatio)}
-                  className="w-full appearance-none bg-slate-900/50 border border-slate-700 rounded-xl px-4 py-3 text-slate-100 focus:ring-2 focus:ring-indigo-500 focus:outline-none cursor-pointer hover:bg-slate-800/50 transition-colors"
+                  className="w-full appearance-none bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-slate-800 focus:ring-2 focus:ring-emerald-500 focus:outline-none cursor-pointer hover:bg-slate-100 transition-colors"
                 >
                   {RatioOptions.map((option) => (
-                    <option key={option.value} value={option.value} className="bg-slate-900">
+                    <option key={option.value} value={option.value} className="bg-white">
                       {option.label}
                     </option>
                   ))}
@@ -150,7 +150,7 @@ const OutfitSwapper: React.FC<OutfitSwapperProps> = ({ apiKey }) => {
           </div>
           
           {selectedPose !== PoseType.ORIGINAL && (
-            <p className="text-xs text-indigo-300 ml-1">
+            <p className="text-xs text-emerald-600 ml-1">
               Note: Changing pose will reconstruct the body while keeping identity.
             </p>
           )}
@@ -158,10 +158,10 @@ const OutfitSwapper: React.FC<OutfitSwapperProps> = ({ apiKey }) => {
           <button
             onClick={handleGenerate}
             disabled={!characterImg || !outfitImg || loading || !apiKey}
-            className={`w-full py-4 rounded-xl font-bold text-lg flex items-center justify-center gap-2 transition-all shadow-lg mt-4
+            className={`w-full py-4 rounded-xl font-bold text-lg flex items-center justify-center gap-2 transition-all shadow-md mt-4
               ${!characterImg || !outfitImg || loading || !apiKey
-                ? 'bg-slate-700 text-slate-400 cursor-not-allowed' 
-                : 'bg-indigo-600 hover:bg-indigo-500 text-white hover:shadow-indigo-500/25'
+                ? 'bg-slate-200 text-slate-400 cursor-not-allowed' 
+                : 'bg-emerald-600 hover:bg-emerald-700 text-white hover:shadow-emerald-500/25'
               }`}
           >
             {loading ? (
@@ -178,33 +178,33 @@ const OutfitSwapper: React.FC<OutfitSwapperProps> = ({ apiKey }) => {
           </button>
           
           {error && (
-            <div className="p-4 bg-red-900/20 border border-red-800 rounded-lg text-red-200 text-sm">
+            <div className="p-4 bg-red-50 border border-red-200 rounded-lg text-red-600 text-sm">
               {error}
             </div>
           )}
         </div>
 
         {/* Output Section */}
-        <div className="h-full min-h-[400px] bg-slate-800/30 p-6 rounded-2xl border border-slate-700/50 flex flex-col">
-           <span className="text-sm font-medium text-slate-300 ml-1 mb-4">Result</span>
-           <div className="flex-grow flex items-center justify-center bg-slate-900/50 rounded-xl border-2 border-dashed border-slate-700 overflow-hidden relative p-2">
+        <div className="h-full min-h-[400px] bg-white p-6 rounded-2xl border border-emerald-100 shadow-sm flex flex-col">
+           <span className="text-sm font-medium text-emerald-900 ml-1 mb-4">Result</span>
+           <div className="flex-grow flex items-center justify-center bg-slate-50 rounded-xl border-2 border-dashed border-slate-200 overflow-hidden relative p-2">
              {resultImg ? (
                <div className="relative w-full h-full flex items-center justify-center group">
-                 <img src={resultImg} alt="Swapped Outfit" className="max-w-full max-h-full object-contain shadow-2xl rounded" />
+                 <img src={resultImg} alt="Swapped Outfit" className="max-w-full max-h-full object-contain shadow-sm rounded" />
                  <a 
                    href={resultImg} 
                    download="fann-outfit-swap.png"
-                   className="absolute bottom-6 right-6 p-3 bg-indigo-600 hover:bg-indigo-500 text-white rounded-full shadow-lg opacity-0 group-hover:opacity-100 transition-all translate-y-2 group-hover:translate-y-0"
+                   className="absolute bottom-6 right-6 p-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-full shadow-lg opacity-0 group-hover:opacity-100 transition-all translate-y-2 group-hover:translate-y-0"
                  >
                    <Download className="w-5 h-5" />
                  </a>
                </div>
              ) : (
                 <div className="text-center p-8">
-                  <div className="w-16 h-16 bg-slate-800 rounded-full mx-auto mb-4 flex items-center justify-center">
-                    <Sparkles className="w-8 h-8 text-slate-600" />
+                  <div className="w-16 h-16 bg-white rounded-full mx-auto mb-4 flex items-center justify-center border border-emerald-100 shadow-sm">
+                    <Sparkles className="w-8 h-8 text-emerald-300" />
                   </div>
-                  <p className="text-slate-500">Generated image will appear here</p>
+                  <p className="text-slate-400">Generated image will appear here</p>
                 </div>
              )}
            </div>
