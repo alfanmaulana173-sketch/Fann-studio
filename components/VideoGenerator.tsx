@@ -13,7 +13,11 @@ const RatioOptions: { label: string; value: AspectRatio }[] = [
   { label: 'Portrait (4:5)', value: AspectRatio.RATIO_4_5 },
 ];
 
-const VideoGenerator: React.FC = () => {
+interface VideoGeneratorProps {
+  apiKey: string;
+}
+
+const VideoGenerator: React.FC<VideoGeneratorProps> = ({ apiKey }) => {
   const [prompt, setPrompt] = useState('');
   const [refImage, setRefImage] = useState<ImageFile | null>(null);
   const [selectedRatio, setSelectedRatio] = useState<AspectRatio>(AspectRatio.RATIO_16_9);
@@ -23,22 +27,33 @@ const VideoGenerator: React.FC = () => {
   const [hasKey, setHasKey] = useState(false);
   const [checkingKey, setCheckingKey] = useState(true);
 
-  // Check for API key on mount
+  // Check for API key on mount, or if passed via props
   useEffect(() => {
     const checkKey = async () => {
+      // If manually entered API key is present, we are good
+      if (apiKey) {
+        setHasKey(true);
+        setCheckingKey(false);
+        return;
+      }
+
+      // Fallback to AI Studio check
       try {
         if (window.aistudio && window.aistudio.hasSelectedApiKey) {
           const selected = await window.aistudio.hasSelectedApiKey();
           setHasKey(selected);
+        } else {
+          setHasKey(false);
         }
       } catch (e) {
         console.error("Error checking API key status", e);
+        setHasKey(false);
       } finally {
         setCheckingKey(false);
       }
     };
     checkKey();
-  }, []);
+  }, [apiKey]);
 
   const handleSelectKey = async () => {
     if (window.aistudio && window.aistudio.openSelectKey) {
@@ -46,23 +61,27 @@ const VideoGenerator: React.FC = () => {
       // Assume success as per prompt instructions to avoid race conditions
       setHasKey(true); 
     } else {
-      alert("AI Studio environment not detected.");
+      alert("AI Studio environment not detected. Please enter key manually above.");
     }
   };
 
   const handleGenerate = async () => {
     if (!prompt) return;
+    // Ensure we have a key
+    if (!apiKey && !hasKey) return;
+
     setLoading(true);
     setError(null);
     setVideoUrl(null);
 
     try {
-      const url = await generateVideo(prompt, refImage || undefined, selectedRatio);
+      const url = await generateVideo(apiKey, prompt, refImage || undefined, selectedRatio);
       setVideoUrl(url);
     } catch (err: any) {
       if (err.message && err.message.includes("Requested entity was not found")) {
-         setError("API Key session invalid. Please select your key again.");
-         setHasKey(false);
+         setError("API Key session invalid. Please check your key.");
+         // If using manual key, keep true. If using aistudio, maybe reset.
+         if (!apiKey) setHasKey(false);
       } else {
          setError(err.message || "Video generation failed.");
       }
@@ -75,7 +94,8 @@ const VideoGenerator: React.FC = () => {
     return <div className="flex justify-center p-12"><Loader2 className="animate-spin w-8 h-8 text-indigo-500" /></div>;
   }
 
-  if (!hasKey) {
+  // Only show "Select Key" block if NO manual key AND NO aistudio key
+  if (!apiKey && !hasKey) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[400px] text-center max-w-2xl mx-auto space-y-6">
         <div className="p-4 bg-indigo-500/10 rounded-full">
@@ -83,14 +103,14 @@ const VideoGenerator: React.FC = () => {
         </div>
         <h2 className="text-2xl font-bold">Cinematic Video Generation</h2>
         <p className="text-slate-400">
-          To generate high-quality videos with Veo 3.1, you need to connect your paid Google Cloud Project API key.
+          To generate high-quality videos with Veo 3.1, you need to enter your Google Cloud Project API key above.
         </p>
         <button 
           onClick={handleSelectKey}
           className="px-6 py-3 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg font-medium flex items-center gap-2 transition-all"
         >
           <Key className="w-4 h-4" />
-          Select API Key
+          Select API Key (AI Studio)
         </button>
         <p className="text-xs text-slate-500">
           Learn more about billing at <a href="https://ai.google.dev/gemini-api/docs/billing" target="_blank" rel="noopener noreferrer" className="text-indigo-400 hover:underline">ai.google.dev/gemini-api/docs/billing</a>
@@ -155,9 +175,9 @@ const VideoGenerator: React.FC = () => {
 
         <button
             onClick={handleGenerate}
-            disabled={!prompt || loading}
+            disabled={!prompt || loading || (!apiKey && !hasKey)}
             className={`w-full py-4 rounded-xl font-bold text-lg flex items-center justify-center gap-2 transition-all shadow-lg
-              ${!prompt || loading 
+              ${!prompt || loading || (!apiKey && !hasKey)
                 ? 'bg-slate-700 text-slate-400 cursor-not-allowed' 
                 : 'bg-indigo-600 hover:bg-indigo-500 text-white hover:shadow-indigo-500/25'
               }`}
@@ -178,7 +198,7 @@ const VideoGenerator: React.FC = () => {
         {error && (
             <div className="p-4 bg-red-900/20 border border-red-800 rounded-lg text-red-200 text-sm">
               {error}
-              {error.includes("API Key") && (
+              {error.includes("API Key") && !apiKey && (
                   <button onClick={handleSelectKey} className="ml-2 underline hover:text-white">Retry Key Selection</button>
               )}
             </div>

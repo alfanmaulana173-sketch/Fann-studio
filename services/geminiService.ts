@@ -49,13 +49,14 @@ const RATIO_PROMPT_INSTRUCTIONS: Record<AspectRatio, string> = {
  * Now supports optional handheld product.
  */
 export const swapOutfit = async (
+  apiKey: string,
   characterImage: ImageFile,
   outfitImage: ImageFile,
   pose: PoseType = PoseType.ORIGINAL,
   ratio: AspectRatio = AspectRatio.RATIO_1_1,
   handheldProduct?: ImageFile
 ): Promise<string> => {
-  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+  const ai = new GoogleGenAI({ apiKey });
   
   let poseInstruction = "STRICTLY maintain the identity, face, expression, pose, and body proportions of the person in the first image.";
   
@@ -147,12 +148,13 @@ export const swapOutfit = async (
  * Feature 2: Product Poster
  */
 export const generateProductPoster = async (
+  apiKey: string,
   productImage: ImageFile,
   themePrompt: string,
   logoImage?: ImageFile,
   ratio: AspectRatio = AspectRatio.RATIO_1_1
 ): Promise<string> => {
-  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+  const ai = new GoogleGenAI({ apiKey });
 
   let logoInstruction = "";
   const parts = [
@@ -219,11 +221,12 @@ export const generateProductPoster = async (
  * Feature 3: Video Generation
  */
 export const generateVideo = async (
+  apiKey: string,
   prompt: string,
   referenceImage?: ImageFile,
   ratio: AspectRatio = AspectRatio.RATIO_16_9
 ): Promise<string> => {
-  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+  const ai = new GoogleGenAI({ apiKey });
   const model = 'veo-3.1-fast-generate-preview';
   
   // Veo supports limited aspect ratios via config, strictly "16:9" or "9:16"
@@ -270,7 +273,7 @@ export const generateVideo = async (
     const videoUri = operation.response?.generatedVideos?.[0]?.video?.uri;
     if (!videoUri) throw new Error("Video generation completed but no URI returned.");
 
-    const videoResponse = await fetch(`${videoUri}&key=${process.env.API_KEY}`);
+    const videoResponse = await fetch(`${videoUri}&key=${apiKey}`);
     if (!videoResponse.ok) throw new Error("Failed to download video bytes.");
 
     const blob = await videoResponse.blob();

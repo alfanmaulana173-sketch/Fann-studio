@@ -12,7 +12,11 @@ const RatioOptions: { label: string; value: AspectRatio }[] = [
   { label: 'Photo (3:2)', value: AspectRatio.RATIO_3_2 },
 ];
 
-const ProductPoster: React.FC = () => {
+interface ProductPosterProps {
+  apiKey: string;
+}
+
+const ProductPoster: React.FC<ProductPosterProps> = ({ apiKey }) => {
   const [productImg, setProductImg] = useState<ImageFile | null>(null);
   const [logoImg, setLogoImg] = useState<ImageFile | null>(null);
   const [theme, setTheme] = useState('');
@@ -22,14 +26,20 @@ const ProductPoster: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
 
   const handleGenerate = async () => {
-    if (!productImg || !theme) return;
+    if (!productImg || !theme || !apiKey) return;
 
     setLoading(true);
     setError(null);
     setResultImg(null);
 
     try {
-      const result = await generateProductPoster(productImg, theme, logoImg || undefined, selectedRatio);
+      const result = await generateProductPoster(
+        apiKey,
+        productImg, 
+        theme, 
+        logoImg || undefined, 
+        selectedRatio
+      );
       setResultImg(result);
     } catch (err: any) {
       setError(err.message || "Failed to generate poster.");
@@ -100,9 +110,9 @@ const ProductPoster: React.FC = () => {
 
             <button
               onClick={handleGenerate}
-              disabled={!productImg || !theme || loading}
+              disabled={!productImg || !theme || loading || !apiKey}
               className={`w-full py-4 rounded-xl font-bold text-lg flex items-center justify-center gap-2 transition-all shadow-lg
-                ${!productImg || !theme || loading 
+                ${!productImg || !theme || loading || !apiKey
                   ? 'bg-slate-700 text-slate-400 cursor-not-allowed' 
                   : 'bg-indigo-600 hover:bg-indigo-500 text-white hover:shadow-indigo-500/25'
                 }`}

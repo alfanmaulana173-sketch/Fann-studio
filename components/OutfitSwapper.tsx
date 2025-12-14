@@ -24,7 +24,11 @@ const RatioOptions: { label: string; value: AspectRatio }[] = [
   { label: 'Photo (3:2)', value: AspectRatio.RATIO_3_2 },
 ];
 
-const OutfitSwapper: React.FC = () => {
+interface OutfitSwapperProps {
+  apiKey: string;
+}
+
+const OutfitSwapper: React.FC<OutfitSwapperProps> = ({ apiKey }) => {
   const [characterImg, setCharacterImg] = useState<ImageFile | null>(null);
   const [outfitImg, setOutfitImg] = useState<ImageFile | null>(null);
   const [handheldImg, setHandheldImg] = useState<ImageFile | null>(null);
@@ -35,7 +39,7 @@ const OutfitSwapper: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
 
   const handleGenerate = async () => {
-    if (!characterImg || !outfitImg) return;
+    if (!characterImg || !outfitImg || !apiKey) return;
 
     setLoading(true);
     setError(null);
@@ -43,6 +47,7 @@ const OutfitSwapper: React.FC = () => {
 
     try {
       const result = await swapOutfit(
+        apiKey,
         characterImg, 
         outfitImg, 
         selectedPose, 
@@ -152,9 +157,9 @@ const OutfitSwapper: React.FC = () => {
 
           <button
             onClick={handleGenerate}
-            disabled={!characterImg || !outfitImg || loading}
+            disabled={!characterImg || !outfitImg || loading || !apiKey}
             className={`w-full py-4 rounded-xl font-bold text-lg flex items-center justify-center gap-2 transition-all shadow-lg mt-4
-              ${!characterImg || !outfitImg || loading 
+              ${!characterImg || !outfitImg || loading || !apiKey
                 ? 'bg-slate-700 text-slate-400 cursor-not-allowed' 
                 : 'bg-indigo-600 hover:bg-indigo-500 text-white hover:shadow-indigo-500/25'
               }`}
