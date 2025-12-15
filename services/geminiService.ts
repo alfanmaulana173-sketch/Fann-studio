@@ -1,4 +1,4 @@
-import { GoogleGenAI } from "@google/genai";
+import { GoogleGenAI, VideoGenerationReferenceType } from "@google/genai";
 import { ImageFile, PoseType, AspectRatio } from "../types";
 
 // Helper to strip the prefix from base64 strings if present
@@ -23,19 +23,24 @@ async function retryWithBackoff<T>(
     const isRateLimit = 
       error?.status === 429 || 
       error?.code === 429 || 
+      error?.status === 503 || // Server overload
       error?.status === 'RESOURCE_EXHAUSTED' ||
+      error?.status === 'UNAVAILABLE' ||
       error?.message?.includes('429') ||
+      error?.message?.includes('503') ||
       error?.message?.includes('Quota exceeded') ||
+      error?.message?.includes('busy') ||
       error?.message?.includes('RESOURCE_EXHAUSTED');
 
     if (isRateLimit && retries > 0) {
-      console.warn(`Quota limit hit. Retrying in ${delay}ms...`);
+      console.warn(`Quota/Server limit hit. Retrying in ${delay/1000}s... (Attempts left: ${retries})`);
       await wait(delay);
-      return retryWithBackoff(operation, retries - 1, delay * 2);
+      return retryWithBackoff(operation, retries - 1, delay * 1.5); // 1.5x backoff
     }
 
     if (isRateLimit) {
-      throw new Error("Daily quota exceeded or server busy. Please wait a minute and try again.");
+      // Return a clearer error after all retries fail
+      throw new Error("Server is currently busy or daily quota reached. Please try again in a few minutes.");
     }
     
     throw error;
@@ -267,9 +272,12 @@ export const generateVideo = async (
   ratio: AspectRatio = AspectRatio.RATIO_16_9
 ): Promise<string> => {
   const ai = new GoogleGenAI({ apiKey });
-  const model = 'veo-3.1-fast-generate-preview';
   
-  // Veo supports limited aspect ratios via config, strictly "16:9" or "9:16"
+  // switched to Standard Veo 3.1 (often interpreted as "Veo 2" or next tier by users) 
+  // to avoid 'fast' model rate limits.
+  const model = 'veo-3.1-generate-preview';
+  
+  // Veo supports limited aspect ratios config, strictly "16:9" or "9:16"
   const targetRatio = VIDEO_RATIO_MAP[ratio] as '16:9' | '9:16';
   const ratioInstruction = RATIO_PROMPT_INSTRUCTIONS[ratio];
   
@@ -277,40 +285,60 @@ export const generateVideo = async (
   const enhancedPrompt = `${prompt}. Visual Style: Cinematic, Photorealistic. Framing: Optimize composition for ${ratioInstruction}. Keep main subject centered.`;
 
   try {
-    // Retry initial video generation request
+    // Extensive retry logic for video generation (up to 5 attempts with increasing delays)
     let operation = await retryWithBackoff(async () => {
+      const videoConfig: any = {
+        numberOfVideos: 1,
+        resolution: '720p',
+        aspectRatio: targetRatio
+      };
+
       if (referenceImage) {
-        return await ai.models.generateVideos({
-          model: model,
-          prompt: enhancedPrompt,
+        // Standard Veo uses 'referenceImages' instead of 'image'
+        videoConfig.referenceImages = [{
           image: {
             imageBytes: cleanBase64(referenceImage.base64),
             mimeType: referenceImage.mimeType,
           },
-          config: {
-              numberOfVideos: 1,
-              resolution: '720p',
-              aspectRatio: targetRatio
-          }
+          referenceType: VideoGenerationReferenceType.ASSET
+        }];
+        
+        return await ai.models.generateVideos({
+          model: model,
+          prompt: enhancedPrompt,
+          config: videoConfig
         });
       } else {
         return await ai.models.generateVideos({
           model: model,
           prompt: enhancedPrompt,
-          config: {
-              numberOfVideos: 1,
-              resolution: '720p',
-              aspectRatio: targetRatio
-          }
+          config: videoConfig
         });
       }
-    });
+    }, 5, 20000); // Start with 20s delay, effectively waits ~4-5 mins total if needed.
 
     while (!operation.done) {
       await new Promise(resolve => setTimeout(resolve, 5000));
-      // Polling usually doesn't hit strict quotas like creation, but good to be safe.
-      // We won't wrap this strictly with backoff to avoid complex state, but basic try/catch exists in caller.
-      operation = await ai.operations.getVideosOperation({ operation: operation });
+      
+      // Wrap polling in try-catch to handle rate limits during status checks
+      try {
+        operation = await ai.operations.getVideosOperation({ operation: operation });
+      } catch (e: any) {
+         const isRateLimit = 
+            e?.status === 429 || 
+            e?.status === 503 ||
+            e?.message?.includes('429') || 
+            e?.message?.includes('Quota') || 
+            e?.message?.includes('busy') ||
+            e?.message?.includes('RESOURCE_EXHAUSTED');
+
+         if (isRateLimit) {
+           console.warn("Polling busy/limit, waiting 15s...");
+           await new Promise(resolve => setTimeout(resolve, 15000));
+           continue; 
+         }
+         throw e;
+      }
     }
 
     const videoUri = operation.response?.generatedVideos?.[0]?.video?.uri;
