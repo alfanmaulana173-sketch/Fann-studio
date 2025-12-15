@@ -1,10 +1,11 @@
+
 import React, { useState } from 'react';
 import Layout from './components/Layout';
 import OutfitSwapper from './components/OutfitSwapper';
-import VideoGenerator from './components/VideoGenerator';
 import ProductPoster from './components/ProductPoster';
+import VideoGenerator from './components/VideoGenerator';
 import { AppMode } from './types';
-import { Shirt, Video, ShoppingBag, Key, CheckCircle, AlertCircle, ArrowRight } from 'lucide-react';
+import { Shirt, ShoppingBag, Key, CheckCircle, AlertCircle, ArrowRight, Video } from 'lucide-react';
 
 const App: React.FC = () => {
   const [mode, setMode] = useState<AppMode>(AppMode.OUTFIT_SWAP);
@@ -27,10 +28,10 @@ const App: React.FC = () => {
     switch (mode) {
       case AppMode.OUTFIT_SWAP:
         return <OutfitSwapper apiKey={apiKey} />;
-      case AppMode.VIDEO_GEN:
-        return <VideoGenerator apiKey={apiKey} />;
       case AppMode.PRODUCT_POSTER:
         return <ProductPoster apiKey={apiKey} />;
+      case AppMode.VIDEO_GENERATION:
+        return <VideoGenerator apiKey={apiKey} />;
       default:
         return <OutfitSwapper apiKey={apiKey} />;
     }
@@ -105,16 +106,6 @@ const App: React.FC = () => {
               Outfit Swap
             </button>
             <button
-              onClick={() => setMode(AppMode.VIDEO_GEN)}
-              className={`flex items-center gap-2 px-6 py-3 rounded-lg text-sm font-medium transition-all whitespace-nowrap
-                ${mode === AppMode.VIDEO_GEN 
-                  ? 'bg-emerald-600 text-white shadow-md' 
-                  : 'text-slate-500 hover:text-emerald-700 hover:bg-emerald-50'}`}
-            >
-              <Video className="w-4 h-4" />
-              Veo Video
-            </button>
-            <button
               onClick={() => setMode(AppMode.PRODUCT_POSTER)}
               className={`flex items-center gap-2 px-6 py-3 rounded-lg text-sm font-medium transition-all whitespace-nowrap
                 ${mode === AppMode.PRODUCT_POSTER 
@@ -123,6 +114,16 @@ const App: React.FC = () => {
             >
               <ShoppingBag className="w-4 h-4" />
               Product Poster
+            </button>
+            <button
+              onClick={() => setMode(AppMode.VIDEO_GENERATION)}
+              className={`flex items-center gap-2 px-6 py-3 rounded-lg text-sm font-medium transition-all whitespace-nowrap
+                ${mode === AppMode.VIDEO_GENERATION 
+                  ? 'bg-emerald-600 text-white shadow-md' 
+                  : 'text-slate-500 hover:text-emerald-700 hover:bg-emerald-50'}`}
+            >
+              <Video className="w-4 h-4" />
+              Video Forge
             </button>
           </div>
         </div>

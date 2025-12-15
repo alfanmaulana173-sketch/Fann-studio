@@ -1,4 +1,5 @@
-import { GoogleGenAI, VideoGenerationReferenceType } from "@google/genai";
+
+import { GoogleGenAI } from "@google/genai";
 import { ImageFile, PoseType, AspectRatio } from "../types";
 
 // Helper to strip the prefix from base64 strings if present
@@ -68,15 +69,6 @@ const IMAGE_RATIO_MAP: Record<AspectRatio, string> = {
   [AspectRatio.RATIO_3_2]: "4:3"   // Closest horizontal approximation
 };
 
-// Veo only supports 16:9 or 9:16
-const VIDEO_RATIO_MAP: Record<AspectRatio, string> = {
-  [AspectRatio.RATIO_1_1]: "16:9", // Fallback
-  [AspectRatio.RATIO_4_5]: "9:16",
-  [AspectRatio.RATIO_9_16]: "9:16",
-  [AspectRatio.RATIO_16_9]: "16:9",
-  [AspectRatio.RATIO_3_2]: "16:9"
-};
-
 const RATIO_PROMPT_INSTRUCTIONS: Record<AspectRatio, string> = {
   [AspectRatio.RATIO_1_1]: "square (1:1)",
   [AspectRatio.RATIO_4_5]: "portrait (4:5)",
@@ -97,7 +89,7 @@ export const swapOutfit = async (
   ratio: AspectRatio = AspectRatio.RATIO_1_1,
   handheldProduct?: ImageFile
 ): Promise<string> => {
-  const ai = new GoogleGenAI({ apiKey });
+  const ai = new GoogleGenAI({ apiKey: apiKey || process.env.API_KEY });
   
   let poseInstruction = "STRICTLY maintain the identity, face, expression, pose, and body proportions of the person in the first image.";
   
@@ -197,7 +189,7 @@ export const generateProductPoster = async (
   logoImage?: ImageFile,
   ratio: AspectRatio = AspectRatio.RATIO_1_1
 ): Promise<string> => {
-  const ai = new GoogleGenAI({ apiKey });
+  const ai = new GoogleGenAI({ apiKey: apiKey || process.env.API_KEY });
 
   let logoInstruction = "";
   const parts = [
@@ -262,96 +254,68 @@ export const generateProductPoster = async (
   });
 };
 
+const VEO_RATIO_MAP: Record<AspectRatio, string> = {
+  [AspectRatio.RATIO_1_1]: "16:9", 
+  [AspectRatio.RATIO_4_5]: "9:16", 
+  [AspectRatio.RATIO_9_16]: "9:16",
+  [AspectRatio.RATIO_16_9]: "16:9",
+  [AspectRatio.RATIO_3_2]: "16:9" 
+};
+
 /**
- * Feature 3: Video Generation
+ * Feature 3: Video Generation with Veo
  */
 export const generateVideo = async (
   apiKey: string,
   prompt: string,
-  referenceImage?: ImageFile,
+  refImage?: ImageFile,
   ratio: AspectRatio = AspectRatio.RATIO_16_9
 ): Promise<string> => {
-  const ai = new GoogleGenAI({ apiKey });
+  const ai = new GoogleGenAI({ apiKey: apiKey || process.env.API_KEY });
   
-  // switched to Standard Veo 3.1 (often interpreted as "Veo 2" or next tier by users) 
-  // to avoid 'fast' model rate limits.
-  const model = 'veo-3.1-generate-preview';
+  const config = {
+    numberOfVideos: 1,
+    resolution: '720p',
+    aspectRatio: VEO_RATIO_MAP[ratio] || '16:9'
+  };
   
-  // Veo supports limited aspect ratios config, strictly "16:9" or "9:16"
-  const targetRatio = VIDEO_RATIO_MAP[ratio] as '16:9' | '9:16';
-  const ratioInstruction = RATIO_PROMPT_INSTRUCTIONS[ratio];
-  
-  // Augment prompt to handle framing for ratios that aren't native 1:1, etc.
-  const enhancedPrompt = `${prompt}. Visual Style: Cinematic, Photorealistic. Framing: Optimize composition for ${ratioInstruction}. Keep main subject centered.`;
+  const request: any = {
+    model: 'veo-3.1-fast-generate-preview',
+    prompt: prompt,
+    config: config
+  };
 
-  try {
-    // Extensive retry logic for video generation (up to 5 attempts with increasing delays)
-    let operation = await retryWithBackoff(async () => {
-      const videoConfig: any = {
-        numberOfVideos: 1,
-        resolution: '720p',
-        aspectRatio: targetRatio
-      };
-
-      if (referenceImage) {
-        // Standard Veo uses 'referenceImages' instead of 'image'
-        videoConfig.referenceImages = [{
-          image: {
-            imageBytes: cleanBase64(referenceImage.base64),
-            mimeType: referenceImage.mimeType,
-          },
-          referenceType: VideoGenerationReferenceType.ASSET
-        }];
-        
-        return await ai.models.generateVideos({
-          model: model,
-          prompt: enhancedPrompt,
-          config: videoConfig
-        });
-      } else {
-        return await ai.models.generateVideos({
-          model: model,
-          prompt: enhancedPrompt,
-          config: videoConfig
-        });
-      }
-    }, 5, 20000); // Start with 20s delay, effectively waits ~4-5 mins total if needed.
-
-    while (!operation.done) {
-      await new Promise(resolve => setTimeout(resolve, 5000));
-      
-      // Wrap polling in try-catch to handle rate limits during status checks
-      try {
-        operation = await ai.operations.getVideosOperation({ operation: operation });
-      } catch (e: any) {
-         const isRateLimit = 
-            e?.status === 429 || 
-            e?.status === 503 ||
-            e?.message?.includes('429') || 
-            e?.message?.includes('Quota') || 
-            e?.message?.includes('busy') ||
-            e?.message?.includes('RESOURCE_EXHAUSTED');
-
-         if (isRateLimit) {
-           console.warn("Polling busy/limit, waiting 15s...");
-           await new Promise(resolve => setTimeout(resolve, 15000));
-           continue; 
-         }
-         throw e;
-      }
-    }
-
-    const videoUri = operation.response?.generatedVideos?.[0]?.video?.uri;
-    if (!videoUri) throw new Error("Video generation completed but no URI returned.");
-
-    const videoResponse = await fetch(`${videoUri}&key=${apiKey}`);
-    if (!videoResponse.ok) throw new Error("Failed to download video bytes.");
-
-    const blob = await videoResponse.blob();
-    return URL.createObjectURL(blob);
-
-  } catch (error) {
-    console.error("Video generation failed:", error);
-    throw error;
+  if (refImage) {
+    request.image = {
+        imageBytes: cleanBase64(refImage.base64),
+        mimeType: refImage.mimeType
+    };
   }
+
+  // Initiate generation
+  let operation = await retryWithBackoff(async () => {
+      return await ai.models.generateVideos(request);
+  });
+
+  // Poll for completion
+  while (!operation.done) {
+    await wait(5000); // 5s interval
+    operation = await ai.operations.getVideosOperation({operation: operation});
+  }
+  
+  const videoUri = operation.response?.generatedVideos?.[0]?.video?.uri;
+  if (!videoUri) {
+      throw new Error("Video generation failed or returned no URI.");
+  }
+
+  // Fetch the actual video content
+  const fetchUrl = `${videoUri}&key=${apiKey || process.env.API_KEY}`;
+  const response = await fetch(fetchUrl);
+  
+  if (!response.ok) {
+      throw new Error(`Failed to download video: ${response.statusText}`);
+  }
+  
+  const blob = await response.blob();
+  return URL.createObjectURL(blob);
 };

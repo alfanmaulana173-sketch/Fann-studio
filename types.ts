@@ -1,7 +1,8 @@
+
 export enum AppMode {
   OUTFIT_SWAP = 'OUTFIT_SWAP',
-  VIDEO_GEN = 'VIDEO_GEN',
-  PRODUCT_POSTER = 'PRODUCT_POSTER'
+  PRODUCT_POSTER = 'PRODUCT_POSTER',
+  VIDEO_GENERATION = 'VIDEO_GENERATION'
 }
 
 export enum PoseType {
@@ -32,13 +33,12 @@ export interface ImageFile {
 }
 
 export interface GenerationResult {
-  type: 'image' | 'video';
+  type: 'image';
   url: string;
   description?: string;
 }
 
 // Global declaration for the specific AI Studio window object
-// We augment the AIStudio interface which is already declared on Window in the environment
 declare global {
   interface AIStudio {
     hasSelectedApiKey: () => Promise<boolean>;

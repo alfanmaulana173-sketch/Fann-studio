@@ -18,7 +18,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
             <span className="font-bold text-xl tracking-tight text-emerald-950">Fann <span className="text-emerald-600 font-light">Studio</span></span>
           </div>
           <div className="hidden sm:block text-xs text-emerald-600/70 font-medium">
-            POWERED BY GEMINI & VEO
+            POWERED BY GEMINI
           </div>
         </div>
       </header>

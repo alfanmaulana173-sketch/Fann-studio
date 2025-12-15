@@ -1,5 +1,5 @@
 {
   "name": "Fann Creative Studio",
-  "description": "A professional multimodal AI suite for character outfit swapping, cinematic video generation, and product promotion posters using Gemini and Veo models.",
+  "description": "A professional multimodal AI suite for character outfit swapping and product promotion posters using Gemini models.",
   "requestFramePermissions": []
 }
